@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Messaging App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #chat-container {
+            width: 90%;
+            max-width: 450px;
+            height: 80vh;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #header {
+            background-color: #4CAF50;
+            padding: 15px;
+            text-align: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        #messages {
+            flex: 1;
+            padding: 15px;
+            background-color: #f9f9f9;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 70%;
+            display: inline-block;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            background-color: #4CAF50;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.other {
+            background-color: #e6e6e6;
+            color: black;
+            margin-right: auto;
+            text-align: left;
+        }
+
+        #input-container {
+            display: flex;
+            padding: 15px;
+            background-color: #f1f1f1;
+            border-top: 1px solid #ddd;
+        }
+
+        #message-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #send-btn {
+            margin-left: 10px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #send-btn:hover {
+            background-color: #45a049;
+        }
+
+        @media (max-width: 500px) {
+            #chat-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="header">Chat Room</div>
+    <div id="messages"></div>
+    <div id="input-container">
+        <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off">
+        <button id="send-btn">Send</button>
+    </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js"></script>
+
+<script>
+    // Your Firebase configuration
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const messagesDiv = document.getElementById('messages');
+    const input = document.getElementById('message-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    // Function to display messages
+    function displayMessage(text, sender = 'other') {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+        messageElement.classList.add(sender);  // "user" or "other"
+        messageElement.textContent = text;
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;  // Auto-scroll to bottom
+    }
+
+    // Fetch and display messages in real-time from Firebase
+    const messagesRef = database.ref('messages');
+    messagesRef.on('child_added', (snapshot) => {
+        const message = snapshot.val();
+        displayMessage(message.text, message.sender);
+    });
+
+    // Handle sending messages
+    sendBtn.addEventListener('click', () => {
+        const message = input.value.trim();  // Trim white spaces
+        if (message) {
+            // Push the message to Firebase
+            messagesRef.push({
+                text: message,
+                sender: 'user'  // Mark as sent by the user
+            }).then(() => {
+                // After successfully sending the message, display it locally
+                displayMessage(message, 'user');
+                input.value = '';  // Clear the input box
+            }).catch((error) => {
+                console.error("Error sending message: ", error);
+                alert("Failed to send the message. Please try again.");
+            });
+        }
+    });
+
+    // Allow pressing "Enter" to send messages
+    input.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            sendBtn.click();  // Trigger the send button click on Enter
+        }
+    });
+</script>
+
+</body>
+</html>
